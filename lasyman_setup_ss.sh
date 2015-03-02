@@ -138,7 +138,8 @@ function start_ss()
 		echo "ERROR!!!"
 		exit 1
 	fi
-	nohup python /root/shadowsocks/shadowsocks/server.py > /var/log/shadowsocks.log 2>&1 &
+	cd /root/shadowsocks/shadowsocks
+	nohup python server.py > /var/log/shadowsocks.log 2>&1 &
 	echo -e "congratulations, shadowsocks server starting...\n"
 	echo -e "The log file is in /var/log/shadowsocks.log..."
 	echo -e "visit your ip you can see the web, you can configure it at /var/www/html"

@@ -85,7 +85,7 @@ echo "Stoping MySQL..."
 /etc/init.d/$M_Name stop
 echo "Starting MySQL with skip grant tables"
 /usr/bin/mysqld_safe --skip-grant-tables >/dev/null 2>&1 &
-if RESET
+if [[ $RESET -eq 1 ]];then
 /usr/bin/mysql -u root mysql << EOF
 EOF
 /etc/init.d/$M_Name restart
@@ -147,7 +147,8 @@ function install_soft_for_each(){
 			echo "$file installed ."
 		done
 		pip install cymysql shadowsocks
-		
+		echo "=======ready to reset mysql root password========"
+		reset_mysql_root_pwd
 	elif [[ ${CENTOS} -eq 1 ]];then
 		echo "Will install softwears on your CentOs system:"
 		update_system
@@ -158,7 +159,7 @@ function install_soft_for_each(){
 			echo "installing $file ..."
 			echo "-------------------------"
 			yum install $file -y
-			sleep 1
+			sleep 3
 			echo "$file installed ."
 		done
 		easy_install pip

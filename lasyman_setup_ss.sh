@@ -20,6 +20,7 @@ ROOT_PASSWD=""
 DB_NAME="shadowsocks"
 SQL_FILES="invite_code.sql ss_admin.sql ss_node.sql ss_reset_pwd.sql user.sql"
 CREATED=0
+RESET=1
 #----------------------------------------
 
 #check OS version
@@ -29,7 +30,7 @@ CHECK_OS_VERSION=`cat /etc/issue |sed -n 1"$1"p|awk '{printf $1}' |tr 'a-z' 'A-Z
 UBUNTU_TOOLS_LIBS="python-pip mysql-server libapache2-mod-php5 python-m2crypto php5-cli git \
 				apache2 php5-gd php5-mysql php5-dev libmysqlclient15-dev php5-curl php-pear language-pack-zh*"
 
-CENTOS_TOOLS_LIBS="mphp55w php55w-opcache mysql55w mysql55w-server php55w-mysql php55w-gd libjpeg* \
+CENTOS_TOOLS_LIBS="php55w php55w-opcache mysql55w mysql55w-server php55w-mysql php55w-gd libjpeg* \
 				php55w-imap php55w-ldap php55w-odbc php55w-pear php55w-xml php55w-xmlrpc php55w-mbstring \
 				php55w-mcrypt php55w-bcmath php55w-mhash libmcrypt m2crypto python-setuptools httpd"
 
@@ -84,8 +85,13 @@ echo "Stoping MySQL..."
 /etc/init.d/$M_Name stop
 echo "Starting MySQL with skip grant tables"
 /usr/bin/mysqld_safe --skip-grant-tables >/dev/null 2>&1 &
-echo "using mysql to flush privileges and reset password"
+if RESET
+/usr/bin/mysql -u root mysql << EOF
+EOF
+/etc/init.d/$M_Name restart
 sleep 5
+fi
+echo "using mysql to flush privileges and reset password"
 echo "set password for root@localhost = pssword('$ROOT_PASSWD');"
 /usr/bin/mysql -u root mysql << EOF
 update user set password = Password('$ROOT_PASSWD') where User = 'root';
@@ -98,8 +104,10 @@ sleep 5
 echo "Restarting the actual mysql service"
 /etc/init.d/$M_Name start
 echo "Password successfully reset to '$ROOT_PASSWD'"
+RESET=1
 else
 echo "Reset MySQL root password failed!"
+RESET=0
 fi
 elif [[ ${UBUNTU} -eq 1 ]];then
 echo "========================================================================="
@@ -157,6 +165,9 @@ function install_soft_for_each(){
 		pip install cymysql shadowsocks
 		echo "=======ready to reset mysql root password========"
 		reset_mysql_root_pwd
+		if [ $RESET -eq 0 ];then
+			reset_mysql_root_pwd
+		fi
 	else
 		echo "Other OS not support yet, please try Ubuntu or CentOs"
 		exit 1

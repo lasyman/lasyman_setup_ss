@@ -23,13 +23,13 @@ CREATED=0
 #----------------------------------------
 
 #check OS version
-CHECK_OS_VERSION=`cat /etc/issue |sed -n "$1"p|awk '{printf $1}' |tr 'a-z' 'A-Z'`
+CHECK_OS_VERSION=`cat /etc/issue |sed -n 1"$1"p|awk '{printf $1}' |tr 'a-z' 'A-Z'`
 
 #list the software need to be installed to the variable FILELIST
 UBUNTU_TOOLS_LIBS="python-pip mysql-server libapache2-mod-php5 python-m2crypto php5-cli git \
 				apache2 php5-gd php5-mysql php5-dev libmysqlclient15-dev php5-curl php-pear language-pack-zh*"
 
-CENTOS_TOOLS_LIBS="php55w php55w-opcache mysql55w mysql55w-server php55w-mysql php55w-gd libjpeg* \
+CENTOS_TOOLS_LIBS="mphp55w php55w-opcache mysql55w mysql55w-server php55w-mysql php55w-gd libjpeg* \
 				php55w-imap php55w-ldap php55w-odbc php55w-pear php55w-xml php55w-xmlrpc php55w-mbstring \
 				php55w-mcrypt php55w-bcmath php55w-mhash libmcrypt m2crypto python-setuptools httpd"
 
@@ -51,12 +51,12 @@ function check_OS_distributor(){
 ## update system
 function update_system()
 {
-	if [ ${UNUNTU} -eq 1 ];then
+	if [[ ${UNUNTU} -eq 1 ]];then
 	{
 		echo "apt-get update"
 		apt-get update
 	}
-	elif [ ${CENTOS} -eq 1 ];then
+	elif [[ ${CENTOS} -eq 1 ]];then
 	{
 		##Webtatic EL6 for CentOS/RHEL 6.x
 		rpm -Uvh https://mirror.webtatic.com/yum/el6/latest.rpm
@@ -70,7 +70,7 @@ function update_system()
 ## reset mysql root password 
 function reset_mysql_root_pwd()
 {
-if [ ${CENTOS} -eq 1 ];then
+if [[ ${CENTOS} -eq 1 ]];then
 echo "========================================================================="
 echo "Reset MySQL root Password for CentOs"
 echo "========================================================================="
@@ -87,12 +87,8 @@ echo "Starting MySQL with skip grant tables"
 echo "using mysql to flush privileges and reset password"
 sleep 5
 echo "set password for root@localhost = pssword('$ROOT_PASSWD');"
-/usr/bin/mysql -u root << EOF
-EOF
-/etc/init.d/$M_Name restart
-sleep 5
-/usr/bin/mysql -u root << EOF
-set password for root@localhost = pssword('$ROOT_PASSWD');
+/usr/bin/mysql -u root mysql << EOF
+update user set password = Password('$ROOT_PASSWD') where User = 'root';
 EOF
 reset_status=`echo $?`
 if [ $reset_status = "0" ]; then
@@ -105,7 +101,7 @@ echo "Password successfully reset to '$ROOT_PASSWD'"
 else
 echo "Reset MySQL root password failed!"
 fi
-elif [ ${UBUNTU} -eq 1 ];then
+elif [[ ${UBUNTU} -eq 1 ]];then
 echo "========================================================================="
 echo "Reset MySQL root Password for Ubuntu"
 echo "========================================================================="
@@ -129,10 +125,10 @@ fi
 function install_soft_for_each(){
 	echo "check OS version..."
 	check_OS_distributor
-	if [ ${UBUNTU} -eq 1 ];then
+	if [[ ${UBUNTU} -eq 1 ]];then
 		echo "Will install below software on your Ubuntu system:"
-		update_ubuntu
-		for file in ${TOOLS_LIBS}
+		update_system
+		for file in ${UBUNTU_TOOLS_LIBS}
 		do
 			trap 'echo -e "\ninterrupted by user, exit";exit' INT
 			echo "========================="
@@ -143,9 +139,11 @@ function install_soft_for_each(){
 			echo "$file installed ."
 		done
 		pip install cymysql shadowsocks
-	elif [ ${CENTOS} -eq 1 ];then
+		
+	elif [[ ${CENTOS} -eq 1 ]];then
 		echo "Will install softwears on your CentOs system:"
-		for file in ${TOOLS_LIBS}
+		update_system
+		for file in ${CENTOS_TOOLS_LIBS}
 		do
 			trap 'echo -e "\ninterrupted by user, exit";exit' INT
 			echo "========================="
@@ -155,6 +153,7 @@ function install_soft_for_each(){
 			sleep 1
 			echo "$file installed ."
 		done
+		easy_install pip
 		pip install cymysql shadowsocks
 		echo "=======ready to reset mysql root password========"
 		reset_mysql_root_pwd
@@ -168,7 +167,7 @@ function install_soft_for_each(){
 #mysql operation
 function mysql_op()
 {
-	if [ ${CREATED} -eq 0 ];then
+	if [[ ${CREATED} -eq 0 ]];then
 		mysql -h${HOST} -P${PORT} -u${USER} -p${ROOT_PASSWD} -e "$1"
 	else
 		mysql -h${HOST} -P${PORT} -u${USER} -p${ROOT_PASSWD} ${DB_NAME} -e "$1"
@@ -229,12 +228,12 @@ function setup_sspanel()
 #start shadowsocks server
 function start_ss()
 {
-	if [ $UBUNTU -eq 1 ];then
+	if [[ $UBUNTU -eq 1 ]];then
 		service apache2 restart
-	elif [ $CENTOS -eq 1 ];then
+	elif [[ $CENTOS -eq 1 ]];then
 		/etc/init.d/httpd restart
 	fi
-	if [ $? != 0 ];then
+	if [[ $? != 0 ]];then
 		echo "Web server restart failed, please check!"
 		echo "ERROR!!!"
 		exit 1

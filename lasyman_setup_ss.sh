@@ -186,6 +186,15 @@ function mysql_op()
 	fi
 }
 
+## configure firewall
+function setup_firewall()
+{
+	for port in 443 80 `seq 50000 60000`
+	do
+		iptables -I INPUT -p tcp --dport $port -j ACCEPT
+	done
+}
+
 #setup manyuser ss
 function setup_manyuser_ss()
 {
@@ -243,7 +252,7 @@ function start_ss()
 	if [[ $UBUNTU -eq 1 ]];then
 		service apache2 restart
 	elif [[ $CENTOS -eq 1 ]];then
-		/etc/init.d/httpd restart
+		/etc/init.d/httpd start
 	fi
 	if [[ $? != 0 ]];then
 		echo "Web server restart failed, please check!"
@@ -252,6 +261,8 @@ function start_ss()
 	fi
 	cd /root/shadowsocks/shadowsocks
 	nohup python server.py > /var/log/shadowsocks.log 2>&1 &
+	echo "setup firewall..."
+	setup_firewall
 	echo ""
 	echo "========================================================================"
 	echo "congratulations, shadowsocks server starting..."

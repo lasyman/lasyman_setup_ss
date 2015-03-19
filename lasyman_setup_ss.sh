@@ -5,6 +5,8 @@
 # Email: xingpeng2012@gmail.com
 # Date: 20150301
 # Version: v1.0
+# History:
+	add centos support@0319
 ##########################################
 
 #----------------------------------------
@@ -27,7 +29,7 @@ UBUNTU_TOOLS_LIBS="python-pip mysql-server libapache2-mod-php5 python-m2crypto p
 
 CENTOS_TOOLS_LIBS="php55w php55w-opcache mysql55w mysql55w-server php55w-mysql php55w-gd libjpeg* \
 				php55w-imap php55w-ldap php55w-odbc php55w-pear php55w-xml php55w-xmlrpc php55w-mbstring \
-				php55w-mcrypt php55w-bcmath php55w-mhash libmcrypt m2crypto python-setuptools"
+				php55w-mcrypt php55w-bcmath php55w-mhash libmcrypt m2crypto python-setuptools httpd"
 
 ## check whether system is Ubuntu or not
 function check_OS_distributor(){

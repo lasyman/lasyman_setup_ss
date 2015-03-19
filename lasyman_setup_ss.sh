@@ -12,7 +12,7 @@
 HOST="localhost"
 USER="root"
 PORT="3306"
-PASSWD="12345"
+MYSQL_ROOT_PASSWD=""
 DB_NAME="shadowsocks"
 SQL_FILES="invite_code.sql ss_admin.sql ss_node.sql ss_reset_pwd.sql user.sql"
 CREATED=0
@@ -22,24 +22,88 @@ CREATED=0
 CHECK_OS_VERSION=`cat /etc/issue |sed -n "$1"p|awk '{printf $1}' |tr 'a-z' 'A-Z'`
 
 #list the software need to be installed to the variable FILELIST
-TOOLS_LIBS="python-pip mysql-server libapache2-mod-php5 python-m2crypto php5-cli git apache2 php5-gd php5-mysql php5-dev libmysqlclient15-dev php5-curl php-pear language-pack-zh*"
+UBUNTU_TOOLS_LIBS="python-pip mysql-server libapache2-mod-php5 python-m2crypto php5-cli git \
+				apache2 php5-gd php5-mysql php5-dev libmysqlclient15-dev php5-curl php-pear language-pack-zh*"
 
-
-## update system
-function update_ubuntu(){
-	echo "apt-get update"
-	apt-get update
-}
+CENTOS_TOOLS_LIBS="php55w php55w-opcache mysql55w mysql55w-server php55w-mysql php55w-gd libjpeg* \
+				php55w-imap php55w-ldap php55w-odbc php55w-pear php55w-xml php55w-xmlrpc php55w-mbstring \
+				php55w-mcrypt php55w-bcmath php55w-mhash libmcrypt m2crypto python-setuptools"
 
 ## check whether system is Ubuntu or not
 function check_OS_distributor(){
-echo "checking distributor and release ID ..."
-if [[ "${CHECK_OS_VERSION}" == "UBUNTU" ]] ;then
-	echo -e "\tCurrent OS: ${CHECK_OS_VERSION}"
-	UBUNTU=1
+	echo "checking distributor and release ID ..."
+	if [[ "${CHECK_OS_VERSION}" == "UBUNTU" ]] ;then
+		echo -e "\tCurrent OS: ${CHECK_OS_VERSION}"
+		UBUNTU=1
+	elif [[ "${CHECK_OS_VERSION}" == "CENTOS" ]] ;then
+		echo -e "\tCurrent OS: ${CHECK_OS_VERSION}!!!"
+		CENTOS=1
+	else
+		echo "not support ${CHECK_OS_VERSION} now"
+		exit 1
+	fi
+}
+
+## update system
+function update_system()
+{
+	if [ ${UNUNTU} -eq 1 ];then
+	{
+		echo "apt-get update"
+		apt-get update
+	}
+	elif [ ${CENTOS} -eq 1 ];then
+	{
+		##Webtatic EL6 for CentOS/RHEL 6.x
+		rpm -Uvh https://mirror.webtatic.com/yum/el6/latest.rpm
+		yum install mysql.`uname -i` yum-plugin-replace -y
+		yum replace mysql --replace-with mysql55w -y
+		yum replace php-common --replace-with=php55w-common -y
+	}
+	fi
+}
+
+## reset mysql root password for CentOs
+function reset_mysql_root_pwd()
+{
+echo "========================================================================="
+echo "Reset MySQL root Password for CentOs"
+echo "========================================================================="
+echo ""
+if [ -s /usr/bin/mysql ]; then
+M_Name="mysqld"
 else
-	echo -e "\tCurrent OS is not ${CHECK_OS_VERSION}!!!"
-	exit 1
+M_Name="mariadb"
+fi
+read -p "(Please input New MySQL root password):" MYSQL_ROOT_PASSWD
+if [ "$MYSQL_ROOT_PASSWD" = "" ]; then
+echo "Error: Password can't be NULL!!"
+exit 1
+fi
+echo "Stoping MySQL..."
+/etc/init.d/$M_Name stop
+echo "Starting MySQL with skip grant tables"
+/usr/bin/mysqld_safe --skip-grant-tables >/dev/null 2>&1 &
+echo "using mysql to flush privileges and reset password"
+sleep 5
+echo "set password for root@localhost = pssword('$MYSQL_ROOT_PASSWD');"
+/usr/bin/mysql -u root << EOF
+EOF
+/etc/init.d/$M_Name restart
+sleep 5
+/usr/bin/mysql -u root << EOF
+set password for root@localhost = pssword('$MYSQL_ROOT_PASSWD');
+EOF
+reset_status=`echo $?`
+if [ $reset_status = "0" ]; then
+echo "Password reset succesfully. Now killing mysqld softly"
+killall mysqld
+sleep 5
+echo "Restarting the actual mysql service"
+/etc/init.d/$M_Name start
+echo "Password successfully reset to '$MYSQL_ROOT_PASSWD'"
+else
+echo "Reset MySQL root password failed!"
 fi
 }
 
@@ -47,25 +111,41 @@ fi
 function install_soft_for_each(){
 	echo "check OS version..."
 	check_OS_distributor
-	if [ ${UBUNTU} -eq 0 ];then
-		echo "there are some errors I meet on CentOs, please try Ubuntu."
-		echo "If you setup success please contact and help me to solve that, many thanks!!"
+	if [ ${UBUNTU} -eq 1 ];then
+		echo "Will install below software on your Ubuntu system:"
+		update_ubuntu
+		for file in ${TOOLS_LIBS}
+		do
+			trap 'echo -e "\ninterrupted by user, exit";exit' INT
+			echo "========================="
+			echo "installing $file ..."
+			echo "-------------------------"
+			apt-get install $file -y
+			sleep 1
+			echo "$file installed ."
+		done
+		pip install cymysql shadowsocks
+	elif [ ${CENTOS} -eq 1 ];then
+		echo "Will install softwears on your CentOs system:"
+		for file in ${TOOLS_LIBS}
+		do
+			trap 'echo -e "\ninterrupted by user, exit";exit' INT
+			echo "========================="
+			echo "installing $file ..."
+			echo "-------------------------"
+			yum install $file -y
+			sleep 1
+			echo "$file installed ."
+		done
+		pip install cymysql shadowsocks
+		echo "=======ready to reset mysql root password========"
+		reset_mysql_root_pwd
 	else
-	echo "Will install below software on your Ubuntu system:"
-	update_ubuntu
-	for file in ${TOOLS_LIBS}
-	do
-		trap 'echo -e "\ninterrupted by user, exit";exit' INT
-		echo "========================="
-		echo "installing $file ..."
-		echo "-------------------------"
-		apt-get install $file -y
-		sleep 1
-		echo "$file installed ."
-	done
-	pip install cymysql shadowsocks
+		echo "Other OS not support yet, please try Ubuntu or CentOs"
+		exit 1
 	fi
 }
+
 
 #mysql operation
 function mysql_op()

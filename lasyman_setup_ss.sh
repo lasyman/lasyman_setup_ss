@@ -193,6 +193,8 @@ function setup_firewall()
 	do
 		iptables -I INPUT -p tcp --dport $port -j ACCEPT
 	done
+	/etc/init.d/iptables save
+	/etc/init.d/iptables restart
 }
 
 #setup manyuser ss

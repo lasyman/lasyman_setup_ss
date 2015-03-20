@@ -1,9 +1,9 @@
 # lasy_setup_ss
 use the shell script to setup shadowsocks on Ubuntu 1404 or CentOs 6.5
 
-*1. First you must install mysql and set the root password*
+*1. First you must git clone this script to your VPS*
 
-*2. Modify the script and change the variate of PASSWD*
+*2. run it by command # bash lasyman_setup_ss.sh*
 
 *3. After the script done, you can visit your VPS IP to see the result*
 

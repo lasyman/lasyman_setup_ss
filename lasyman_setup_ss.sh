@@ -9,6 +9,8 @@
 #	add centos support@0319
 #----------------------------------------
 #   fix bugs and code optimization@0319
+#----------------------------------------
+#	modify for new ss-panel version and add start-up for service@0609
 ##########################################
 
 #----------------------------------------
@@ -18,7 +20,7 @@ USER="root"
 PORT="3306"
 ROOT_PASSWD=""
 DB_NAME="shadowsocks"
-SQL_FILES="invite_code.sql ss_admin.sql ss_node.sql ss_reset_pwd.sql user.sql"
+SQL_FILES="invite_code.sql ss_user_admin.sql ss_node.sql ss_reset_pwd.sql user.sql"
 CREATED=0
 RESET=1
 #----------------------------------------
@@ -262,11 +264,16 @@ function start_ss()
 		exit 1
 	fi
 	cd /root/shadowsocks/shadowsocks
-	nohup python server.py > /var/log/shadowsocks.log 2>&1 &
+	nohup python server.py > /dev/null 2>&1 &
 	echo "setup firewall..."
 	setup_firewall
+	#add start-up
+	echo "cd /root/shadowsocks/shadowsocks;python server.py > /dev/null 2>&1 &" >> /etc/rc.d/rc.local
+	echo "/etc/init.d/httpd start" >> /etc/rc.d/rc.local
+	echo "/etc/init.d/mysqld start" >> /etc/rc.d/rc.local
+	####
 	echo ""
-	echo "========================================================================"
+	echo "========================================================================e"
 	echo "congratulations, shadowsocks server starting..."
 	echo "========================================================================"
 	echo "The log file is in /var/log/shadowsocks.log..."

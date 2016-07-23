@@ -205,7 +205,7 @@ function setup_manyuser_ss()
 	SS_ROOT=/root/shadowsocks/shadowsocks
 	echo -e "download manyuser shadowsocks\n"
 	cd /root
-	git clone -b manyuser https://github.com/mengskysama/shadowsocks.git
+	git clone -b manyuser https://github.com/mengskysama/shadowsocks-rm.git
 	cd ${SS_ROOT}
 	#modify Config.py
 	echo -e "modify Config.py...\n"

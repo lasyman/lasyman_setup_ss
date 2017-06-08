@@ -15,8 +15,8 @@
 
 #----------------------------------------
 #mysql data
-HOST="localhost"
-USER="root"
+HOST="182.18.45.124"
+USER="shadowsocks"
 PORT="3306"
 ROOT_PASSWD=""
 DB_NAME="shadowsocks"
